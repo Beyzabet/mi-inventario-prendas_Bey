@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Personal de 50 Prendas</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f1f1; /* Rosa pálido de fondo */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #d59fc1; /* Rosa suave para el título */
+            margin-top: 20px;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        table {
+            width: 90%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff; /* Blanco para las celdas */
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 15px;
+            border: 1px solid #f1d0d6; /* Rosa claro para los bordes */
+            text-align: center;
+        }
+        th {
+            background-color: #f1d0d6; /* Rosa claro para los encabezados */
+            color: #8e5c7c; /* Título en color rosa más fuerte */
+        }
+        td {
+            background-color: #fef7f9; /* Color rosa muy suave para las celdas */
+        }
+        .btn {
+            background-color: #f5a8c8; /* Rosa suave para el botón */
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .btn:hover {
+            background-color: #f28ea3; /* Rosa más intenso cuando el mouse pasa por encima */
+        }
+        .input-costo {
+            width: 100px;
+            text-align: center;
+            padding: 5px;
+            border: 1px solid #f1d0d6;
+            border-radius: 5px;
+            font-size: 1em;
+            background-color: #fef7f9;
+        }
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .input-file {
+            display: none;
+        }
+        .input-file-label {
+            font-size: 0.8em;
+            color: #f1d0d6;
+            border: 1px solid #f1d0d6;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .input-file-label:hover {
+            background-color: #f1d0d6;
+        }
+        .total {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #d59fc1;
+        }
+        .image-large {
+            max-width: 500px;
+            max-height: 500px;
+            margin: 20px;
+            object-fit: contain;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .modal-close-btn {
+            background-color: #d59fc1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .modal-close-btn:hover {
+            background-color: #f28ea3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Inventario Personal de 50 Prendas</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Imagen</th>
+                <th>Costo (S/)</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="inventario">
+            <!-- Aquí se generarán automáticamente las filas -->
+        </tbody>
+    </table>
+    <div class="total">Ganancias Totales: S/ <span id="totalVentas">0</span></div>
+
+    <!-- Modal para ver la imagen ampliada -->
+    <div id="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background-color: rgba(0, 0, 0, 0.8); z-index: 1000;">
+        <button class="modal-close-btn" onclick="cerrarModal()">Cerrar</button>
+        <img id="modalImage" class="image-large" onclick="cerrarModal()">
+    </div>
+
+    <script>
+        const maxPrendas = 50;
+        let totalVentas = 0;
+
+        // Inicializar el inventario con 50 prendas
+        const inventario = Array.from({ length: maxPrendas }, () => ({
+            imagenes: [],
+            costo: 0,
+            estado: 'Disponible',
+        }));
+
+        // Función para mostrar el inventario en la tabla
+        function mostrarInventario() {
+            const inventarioTabla = document.getElementById('inventario');
+            inventarioTabla.innerHTML = ''; // Limpiar la tabla
+
+            inventario.forEach((prenda, index) => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td>
+                        <div class="image-container" id="imagenes-${index}">
+                            ${prenda.imagenes.map((imagen, idx) => `
+                                <img src="${imagen}" class="image-preview" onclick="verImagenAmpliada('${imagen}')">
+                            `).join('')}
+                            <label for="input-file-${index}" class="input-file-label">Seleccionar Imagen</label>
+                            <input type="file" class="input-file" id="input-file-${index}" accept="image/*" onchange="cargarImagen(${index}, this)">
+                        </div>
+                    </td>
+                    <td>
+                        <input type="number" class="input-costo" value="${prenda.costo}" min="0" step="0.01" onchange="actualizarCosto(${index}, this.value)">
+                    </td>
+                    <td>${prenda.estado}</td>
+                    <td>
+                        <button class="btn" onclick="cambiarEstado(${index})">${prenda.estado === 'Disponible' ? 'Vender' : 'Disponible'}</button>
+                    </td>
+                `;
+                inventarioTabla.appendChild(fila);
+            });
+        }
+
+        function actualizarCosto(index, costo) {
+            inventario[index].costo = parseFloat(costo);
+        }
+
+        function cambiarEstado(index) {
+            const prenda = inventario[index];
+            if (prenda.estado === 'Disponible') {
+                prenda.estado = 'Vendido';
+                totalVentas += prenda.costo;
+            } else {
+                prenda.estado = 'Disponible';
+            }
+            mostrarInventario();
+            document.getElementById('totalVentas').textContent = totalVentas.toFixed(2);
+        }
+
+        function cargarImagen(index, input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (inventario[index].imagenes.length < 3) {
+                        inventario[index].imagenes.push(e.target.result);
+                        mostrarInventario();
+                    } else {
+                        alert("Puedes subir solo 3 imágenes.");
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function verImagenAmpliada(imagen) {
+            const modal = document.getElementById('modal');
+            const modalImage = document.getElementById('modalImage');
+            modal.style.display = 'block';
+            modalImage.src = imagen;
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        mostrarInventario();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
